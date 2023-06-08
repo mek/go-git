@@ -94,11 +94,6 @@ func main() {
 		log.Fatalf("failed to get current branch: %v", err)
 	}
 
-	// Make sure the command is allowed based on the current branch
-	if !isCommandAllowed(gitBranch) {
-		log.Fatalf("command not allowed in %s", gitBranch)
-	}
-
 	// Process the command
 	switch cmd {
 	case "check":
@@ -114,8 +109,26 @@ func main() {
 		os.Exit(0)
 	case "log", "l":
 		cmd = "log --oneline --graph"
-	case "add", "a", "commit", "c", "push", "p", "originpush", "op", "og":
-		log.Fatalf("command not allowed in %s", gitBranch)
+	case "add", "a":
+		if !isCommandAllowed(gitBranch) {
+			log.Fatalf("command not allowed in %s", gitBranch)
+		}
+		cmd = "add"
+	case "commit", "c":
+		if !isCommandAllowed(gitBranch) {
+			log.Fatalf("command not allowed in %s", gitBranch)
+		}
+		cmd = "commit"
+	case "push", "p":
+		if !isCommandAllowed(gitBranch) {
+			log.Fatalf("command not allowed in %s", gitBranch)
+		}
+		cmd = "push"
+	case "originpush", "op", "og":
+		if !isCommandAllowed(gitBranch) {
+			log.Fatalf("command not allowed in %s", gitBranch)
+		}
+		cmd = "push -u origin $git_branch"
 	case "current_hash", "hash":
 		cmd = "rev-parse HEAD"
 	case "grep", "gg":
