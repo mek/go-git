@@ -137,7 +137,7 @@ func main() {
 		if !isCommandAllowed(gitBranch) {
 			log.Fatalf("command not allowed in %s", gitBranch)
 		}
-		cmd = []string{"push", "-u", "origin", "$git_branch"}
+		cmd = []string{"push", "-u", "origin", gitBranch}
 	case "current_hash", "hash":
 		cmd = []string{"rev-parse", "HEAD"}
 	case "grep", "gg":
