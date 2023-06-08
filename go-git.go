@@ -23,8 +23,8 @@ func write(data string) {
 
 // Run a shell command and return the output
 func runCommand(command string) (string, error) {
-	parts := strings.Fields(command)
-	cmd := exec.Command(parts[0], parts[1:]...)
+        parts := strings.Fields(command)
+        cmd := exec.Command(parts[0], parts[1:]...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
@@ -144,9 +144,12 @@ func main() {
 	}
 
 	// Run the Git command
+	fields := strings.Fields(cmd)
+	fmt.Printf("%v, %v",fields,os.Args[2:])
 	output, err := runCommand(fmt.Sprintf("git %s %s", cmd, strings.Join(os.Args[2:], " ")))
 	if err != nil {
-		log.Fatalf("failed to run command: %v", err)
+		fmt.Fprintln(os.Stderr,output)
+		log.Fatalf("failed to uun command: %v", err)
 	}
 
 	// Write the output
