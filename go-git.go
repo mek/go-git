@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"flag"
 )
 
 // Check if a string is empty
@@ -22,16 +23,23 @@ func write(data string) {
 }
 
 // Run a shell command and return the output
-func runCommand(command string) (string, error) {
+func runCommandOld(command string) (string, error) {
         parts := strings.Fields(command)
         cmd := exec.Command(parts[0], parts[1:]...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
 
+// Run a shell command and return the output
+func runCommand(gitprog string,gitcmd []string) (string, error) {
+        cmd := exec.Command(gitprog, gitcmd[0:]...)
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
 // Get the current branch of the Git repository
 func getCurrentBranch() (string, error) {
-	output, err := runCommand("git symbolic-ref --short HEAD")
+	output, err := runCommandOld("git symbolic-ref --short HEAD")
 	if err != nil {
 		return "", fmt.Errorf("failed to get current branch: %v", err)
 	}
@@ -40,7 +48,7 @@ func getCurrentBranch() (string, error) {
 
 // Get the top-level directory of the Git repository
 func getTopLevelDir() (string, error) {
-	output, err := runCommand("git rev-parse --show-toplevel")
+	output, err := runCommandOld("git rev-parse --show-toplevel")
 	if err != nil {
 		return "", fmt.Errorf("failed to get top-level directory: %v", err)
 	}
@@ -60,11 +68,11 @@ func isCommandAllowed(gitBranch string) bool {
 
 // Perform a Git fetch and pull
 func update() error {
-	_, err := runCommand("git fetch --all -p -t")
+	_, err := runCommandOld("git fetch --all -p -t")
 	if err != nil {
 		return fmt.Errorf("failed to fetch: %v", err)
 	}
-	_, err = runCommand("git pull")
+	_, err = runCommandOld("git pull")
 	if err != nil {
 		return fmt.Errorf("failed to pull: %v", err)
 	}
@@ -82,7 +90,7 @@ func main() {
 		log.Fatal("Git is not installed")
 	}
 
-	cmd := os.Args[1]
+	// cmd := os.Args[1]
 
 	// Set up the global variables
 	gitDir, err := getTopLevelDir()
@@ -94,13 +102,14 @@ func main() {
 		log.Fatalf("failed to get current branch: %v", err)
 	}
 
+	cmd := []string{os.Args[1]}
 	// Process the command
-	switch cmd {
+	switch os.Args[1] {
 	case "check":
 		fmt.Printf("%s in %s\n", gitBranch, gitDir)
-		cmd = "rev-parse HEAD"
+		cmd = []string{"rev-parse","HEAD"}
 	case "checkout", "co":
-		cmd = "checkout"
+		cmd = []string{"checkout"}
 	case "update", "u":
 		err := update()
 		if err != nil {
@@ -108,45 +117,44 @@ func main() {
 		}
 		os.Exit(0)
 	case "log", "l":
-		cmd = "log --oneline --graph"
+		cmd = []string{"log", "--oneline", "--graph"}
 	case "add", "a":
 		if !isCommandAllowed(gitBranch) {
 			log.Fatalf("command not allowed in %s", gitBranch)
 		}
-		cmd = "add"
+		cmd = []string{"add"}
 	case "commit", "c":
 		if !isCommandAllowed(gitBranch) {
 			log.Fatalf("command not allowed in %s", gitBranch)
 		}
-		cmd = "commit"
+		cmd = []string{"commit"}
 	case "push", "p":
 		if !isCommandAllowed(gitBranch) {
 			log.Fatalf("command not allowed in %s", gitBranch)
 		}
-		cmd = "push"
+		cmd = []string{"push"}
 	case "originpush", "op", "og":
 		if !isCommandAllowed(gitBranch) {
 			log.Fatalf("command not allowed in %s", gitBranch)
 		}
-		cmd = "push -u origin $git_branch"
+		cmd = []string{"push", "-u", "origin", "$git_branch"}
 	case "current_hash", "hash":
-		cmd = "rev-parse HEAD"
+		cmd = []string{"rev-parse", "HEAD"}
 	case "grep", "gg":
-		cmd = "grep -n"
+		cmd = []string{"grep","-n"}
 	case "clone":
 		if isEmptyString(gitDir) && isEmptyString(gitBranch) {
-			cmd = os.Args[1]
+			cmd = []string{os.Args[1]}
 		} else {
 			log.Fatal("No!")
 		}
 	default:
-		cmd = os.Args[1]
+		cmd = []string{os.Args[1]}
 	}
 
 	// Run the Git command
-	fields := strings.Fields(cmd)
-	fmt.Printf("%v, %v",fields,os.Args[2:])
-	output, err := runCommand(fmt.Sprintf("git %s %s", cmd, strings.Join(os.Args[2:], " ")))
+	flag.Parse()
+	output, err := runCommand("git",append(cmd,flag.Args()[1:]...))
 	if err != nil {
 		fmt.Fprintln(os.Stderr,output)
 		log.Fatalf("failed to uun command: %v", err)
